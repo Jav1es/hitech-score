@@ -1,0 +1,14 @@
+# WorkBuddy 运行时元数据（含本机路径，不入库）
+.workbuddy/
+*.genie
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 依赖与构建产物（本项目零依赖，留作占位）
+node_modules/
+dist/
+*.log

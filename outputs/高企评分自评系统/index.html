@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高新技术企业认定评分自评系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a56db">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="高企评分">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="description" content="依据《高新技术企业认定管理办法》的创新能力评价在线自评测算工具：资格预检、四项指标打分、达标诊断与报告导出">
+</head>
+<body>
+
+<div class="topbar no-print">
+  <div class="inner">
+    <h1>高新技术企业认定评分自评系统</h1>
+    <span class="badge-version" id="policyBadge">政策版本加载中…</span>
+    <span class="spacer"></span>
+    <span class="src" id="policySource"></span>
+  </div>
+</div>
+
+<div class="disclaimer-bar no-print">
+  <div class="inner">⚠ 免责声明：<span id="disclaimerText"></span></div>
+</div>
+
+<div class="layout">
+
+  <!-- 左导航 -->
+  <aside class="sidebar-left no-print">
+    <div class="card"><div class="card-body" id="nav">
+      <a href="#s0" class="active">① 企业档案与资格预检</a>
+      <a href="#s1">② 知识产权（30分）</a>
+      <a href="#s2">③ 科技成果转化（30分）</a>
+      <a href="#s3">④ 研发组织管理（20分）</a>
+      <a href="#s4">⑤ 企业成长性（20分）</a>
+      <a href="#s5">⑥ 结果与诊断</a>
+      <a href="#s6">⑦ 规则包与更新</a>
+      <a href="#s7">⑧ 安装到桌面</a>
+    </div></div>
+  </aside>
+
+  <!-- 主内容 -->
+  <main>
+
+    <!-- ① 企业档案 -->
+    <section class="card" id="s0">
+      <h2><span class="step">1</span>企业档案与资格预检<span class="score-pill">一票否决项，须全部满足</span></h2>
+      <div class="card-body">
+        <div id="precheckAlert"></div>
+        <div class="grid c3">
+          <div class="field"><label>企业名称（选填）</label><input type="text" id="entName" placeholder="用于报告抬头"></div>
+          <div class="field"><label>成立日期 <span class="unit">（须满 365 天）</span></label><input type="date" id="establishDate"></div>
+          <div class="field"><label>申报类型</label>
+            <select id="declareType">
+              <option value="first">首次认定</option>
+              <option value="review">复审 / 重新认定</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid c3" style="margin-top:14px">
+          <div class="field"><label>实际经营年数（用于成长性与成果转化除数）</label>
+            <select id="bizYears">
+              <option value="3">满 3 年（有第 1/2/3 年数据）</option>
+              <option value="2">满 2 年（只有第 1/2 年数据）</option>
+              <option value="1">刚满 1 年（成长性按 0 分）</option>
+            </select>
+            <div class="hint" id="bizHint"></div>
+          </div>
+          <div class="field"><label>职工总数（人）</label><input type="number" id="employeeTotal" min="0"></div>
+          <div class="field"><label>科技人员数（人）<span class="unit"> ≥10%</span></label><input type="number" id="techStaff" min="0"></div>
+        </div>
+
+        <div class="section-sep"></div>
+        <div class="grid c4">
+          <div class="field"><label>最近一年销售收入（元）</label><input type="number" id="revenueRecent" min="0"><div class="hint">用于判定研发费用占比档位（5%/4%/3%）</div></div>
+          <div class="field"><label>近三年销售收入总额（元）</label><input type="number" id="revenue3y" min="0"></div>
+          <div class="field"><label>近三年研发费用总额（元）</label><input type="number" id="rdExpense3y" min="0"></div>
+          <div class="field"><label>适用比例要求</label><input type="text" id="rdRatioText" readonly><div class="hint">按《认定办法》第十一条口径</div></div>
+        </div>
+        <div class="grid c4" style="margin-top:14px">
+          <div class="field"><label>研发费用总额（元）</label><input type="number" id="rdExpenseTotal" min="0"></div>
+          <div class="field"><label>其中：境内研发费用（元）<span class="unit"> ≥60%</span></label><input type="number" id="rdExpenseDomestic" min="0"></div>
+          <div class="field"><label>申报前一年总收入（元）</label><input type="number" id="totalRevenue" min="0"></div>
+          <div class="field"><label>高新技术产品(服务)收入（元）<span class="unit"> ≥60%</span></label><input type="number" id="highTechRevenue" min="0"></div>
+        </div>
+
+        <div class="section-sep"></div>
+        <div class="grid c2">
+          <label class="checkbox"><input type="checkbox" id="fieldOK">主要产品(服务)属于《国家重点支持的高新技术领域》</label>
+          <label class="checkbox"><input type="checkbox" id="noAccident">申请前一年未发生重大安全/重大质量事故或严重环境违法行为</label>
+        </div>
+        <div id="precheckList" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <!-- ② 知识产权 -->
+    <section class="card" id="s1">
+      <h2><span class="step">2</span>知识产权（≤30 分）<span class="score-pill" id="ipPill">—</span></h2>
+      <div class="card-body">
+        <div class="toolbar" style="margin-bottom:10px">
+          <button class="btn sm" id="addIp">+ 添加知识产权</button>
+          <button class="btn sm danger" id="clearIp">清空台账</button>
+          <span class="hint">Ⅰ类：发明专利（含国防专利）、植物新品种、国家级农作物品种、国家新药、国家一级中药保护品种、集成电路布图设计专有权；Ⅱ类：实用新型、外观设计、软件著作权（不含商标）。Ⅱ类仅限使用一次。</span>
+        </div>
+        <div class="table-wrap"><table id="ipTable">
+          <thead><tr><th>名称 / 编号</th><th style="width:110px">类别</th><th style="width:90px">已授权</th>
+            <th style="width:110px">自主研发</th><th style="width:130px">复审时已用过</th><th style="width:60px"></th></tr></thead>
+          <tbody></tbody></table></div>
+        <div class="hint" id="ipCountHint" style="margin-top:8px"></div>
+
+        <div class="section-sep"></div>
+        <div class="grid c2">
+          <div class="field"><label>技术的先进程度（≤8 分）</label><select id="advanced"></select><div class="hint" id="advancedTip"></div></div>
+          <div class="field"><label>对主要产品(服务)的核心支持作用（≤8 分）</label><select id="support"></select><div class="hint" id="supportTip"></div></div>
+        </div>
+        <div class="grid c2" style="margin-top:14px">
+          <div class="field"><label>知识产权获得方式（≤6 分）</label><select id="acquisition"></select>
+            <div class="hint" id="acqNote"></div></div>
+          <div class="field"><label>加分项</label>
+            <label class="checkbox" style="margin-top:6px"><input type="checkbox" id="standard">参与编制国家标准/行业标准/检测方法/技术规范（≤2 分）</label>
+            <div class="hint" id="standardTip"></div></div>
+        </div>
+        <div class="hint" style="margin-top:10px">知识产权指标说明：<span id="ipRuleNote"></span></div>
+      </div>
+    </section>
+
+    <!-- ③ 科技成果转化 -->
+    <section class="card" id="s2">
+      <h2><span class="step">3</span>科技成果转化能力（≤30 分）<span class="score-pill" id="tfPill">—</span></h2>
+      <div class="card-body">
+        <div class="toolbar" style="margin-bottom:10px">
+          <button class="btn sm" id="addAch">+ 添加转化成果</button>
+          <button class="btn sm danger" id="clearAch">清空台账</button>
+          <span class="hint">同一科技成果在国内外转化，或转化为多个产品/服务/工艺/样品/样机的，<b>只计为一项</b>。</span>
+        </div>
+        <div class="table-wrap"><table id="achTable">
+          <thead><tr><th>成果名称（专利/软著/技术等）</th><th style="width:150px">转化形式</th><th style="width:110px">转化年份</th><th style="width:60px"></th></tr></thead>
+          <tbody></tbody></table></div>
+        <div id="tfHint" style="margin-top:10px"></div>
+        <div class="hint">转化形式包括：自行投资实施转化；向他人转让；许可他人使用；以成果作为合作条件与他人共同实施转化；作价投资折算股份；其他协商确定的方式。</div>
+      </div>
+    </section>
+
+    <!-- ④ 研发组织管理 -->
+    <section class="card" id="s3">
+      <h2><span class="step">4</span>研究开发组织管理水平（≤20 分）<span class="score-pill" id="rmPill">—</span></h2>
+      <div class="card-body" id="rmContainer"></div>
+    </section>
+
+    <!-- ⑤ 成长性 -->
+    <section class="card" id="s4">
+      <h2><span class="step">5</span>企业成长性（≤20 分）<span class="score-pill" id="grPill">—</span></h2>
+      <div class="card-body">
+        <div class="hint" style="margin-bottom:10px">净资产增长率 ＝ 1/2×（第二年末净资产÷第一年末净资产 ＋ 第三年末净资产÷第二年末净资产）− 1；销售收入增长率同理。净资产允许为负；增长率为负按 0 分。</div>
+        <div class="grid c3">
+          <div class="field"><label>第一年末净资产（元）</label><input type="number" id="netAsset1"></div>
+          <div class="field"><label>第二年末净资产（元）</label><input type="number" id="netAsset2"></div>
+          <div class="field"><label>第三年末净资产（元）</label><input type="number" id="netAsset3"></div>
+        </div>
+        <div class="grid c3" style="margin-top:14px">
+          <div class="field"><label>第一年销售收入（元）</label><input type="number" id="revenue1" min="0"></div>
+          <div class="field"><label>第二年销售收入（元）</label><input type="number" id="revenue2" min="0"></div>
+          <div class="field"><label>第三年销售收入（元）</label><input type="number" id="revenue3" min="0"></div>
+        </div>
+        <div id="growthDetail" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <!-- ⑥ 结果 -->
+    <section class="card" id="s5">
+      <h2><span class="step">6</span>评分结果与诊断建议</h2>
+      <div class="card-body">
+        <div class="table-wrap"><table id="detailTable">
+          <thead><tr><th>指标 / 评分项</th><th style="width:80px">档位</th><th class="num" style="width:120px">保守分</th>
+            <th class="num" style="width:120px">乐观分</th><th style="width:70px">上限</th><th>说明</th></tr></thead>
+          <tbody></tbody></table></div>
+        <div class="section-sep"></div>
+        <h3 style="font-size:14px;margin-bottom:10px">整改建议（按优先级与提分收益排序）</h3>
+        <div id="suggestList"></div>
+        <div class="section-sep"></div>
+        <div class="toolbar no-print">
+          <button class="btn primary" id="btnPrint">导出 PDF（打印）</button>
+          <button class="btn" id="btnXls">导出 Excel</button>
+          <button class="btn" id="btnSave">保存草稿</button>
+          <button class="btn" id="btnBackup">备份 JSON</button>
+          <button class="btn" id="btnImport">导入备份</button>
+          <button class="btn" id="btnShare">生成分享链接</button>
+          <button class="btn danger" id="btnReset">清空全部</button>
+          <input type="file" id="fileInput" accept=".json" style="display:none">
+        </div>
+        <div id="shareBox" style="margin-top:10px;display:none">
+          <input type="text" id="shareUrl" readonly>
+          <div class="hint">链接内包含本次填报数据的编码副本，请仅发给可信对象；有效期由您自己控制。</div>
+        </div>
+      </div>
+      <div class="footnote" id="footNote"></div>
+    </section>
+
+    <!-- ⑦ 规则包与更新 -->
+    <section class="card" id="s6">
+      <h2><span class="step">7</span>规则包与在线更新<span class="score-pill">改政策不用改代码、不用重新打包</span></h2>
+      <div class="card-body">
+        <div id="packInfo"></div>
+        <div class="section-sep"></div>
+        <div class="toolbar no-print">
+          <button class="btn primary" id="btnCheckUpdate">检查远端更新</button>
+          <button class="btn" id="btnImportPack">导入规则包（上传 JSON）</button>
+          <button class="btn" id="btnExportPack">导出当前规则包</button>
+          <button class="btn danger" id="btnResetPack">恢复出厂规则</button>
+          <input type="file" id="packFile" accept=".json,application/json" style="display:none">
+        </div>
+        <div class="hint" style="margin-top:10px">
+          <b>三种更新方式：</b><br>
+          ① <b>远端更新</b>（推荐）：把新的 <code>rules/policy.json</code> 放到服务器同一目录，用户点「检查远端更新」即可生效，无需重新安装；<br>
+          ② <b>手动导入</b>：点「导入规则包」选择修改好的 policy.json，立即生效并保存在本机；<br>
+          ③ <b>改代码基线</b>：直接编辑 <code>assets/rule-engine.js</code> 顶部的 POLICY 配置对象。<br>
+          规则包只包含评分档位、上限、边界条件与政策文案；<b>切换规则包不会影响你已填写的填报数据</b>。
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑧ 安装到桌面 -->
+    <section class="card" id="s7">
+      <h2><span class="step">8</span>安装到手机 / 电脑桌面<span class="score-pill">离线也能打开</span></h2>
+      <div class="card-body">
+        <div class="grid c2">
+          <div>
+            <h3 style="font-size:14px;margin-bottom:8px">Android / 电脑（Chrome、Edge）</h3>
+            <ol style="margin:0 0 12px 18px;padding:0;color:#4b5563;font-size:13px">
+              <li>用浏览器打开本页地址</li>
+              <li>点右上角菜单 →「安装应用」/「添加到主屏幕」</li>
+              <li>确认后桌面出现图标，点开即全屏运行，断网也能用</li>
+            </ol>
+          </div>
+          <div>
+            <h3 style="font-size:14px;margin-bottom:8px">iPhone / iPad（Safari）</h3>
+            <ol style="margin:0 0 12px 18px;padding:0;color:#4b5563;font-size:13px">
+              <li>用 <b>Safari</b> 打开本页地址</li>
+              <li>点底部「分享」按钮 →「添加到主屏幕」</li>
+              <li>桌面出现图标，之后可离线打开（微信内置浏览器不支持安装）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="hint">本系统是 PWA（渐进式 Web 应用）：具备 App 的安装与离线体验，但<b>不需要应用商店审核、不需要下载安装包、政策更新即时生效</b>——这正是政策类工具最合适的形态。</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 右侧成绩面板 -->
+  <aside class="sidebar-right">
+    <div class="card print-keep">
+      <h2>实时得分</h2>
+      <div class="card-body">
+        <div class="score-hero">
+          <div class="num" id="scoreNum">0</div>
+          <div class="cap">保守总分（政策区间下界） / 满分 100</div>
+          <div class="verdict" id="verdict">请填写数据</div>
+          <div class="cap" id="optimisticText"></div>
+        </div>
+        <div class="bars" id="bars"></div>
+        <div class="radar-wrap" id="radar"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- 打印报告抬头 -->
+<div class="print-only" id="printHeader" style="padding:0 0 10px"></div>
+
+<script src="assets/rule-engine.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
