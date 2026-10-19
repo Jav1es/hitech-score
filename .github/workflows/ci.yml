@@ -1,0 +1,137 @@
+name: CI
+
+# 本项目零依赖、无构建步骤，所以 CI 只做三件事：
+#   1. JS 语法检查
+#   2. 规则引擎自测（它能独立用 Node 跑，是唯一有逻辑的部分）
+#   3. 敏感信息与元数据检查（本仓库 PUBLIC，且面向企业客户）
+#
+# 不做的事：不装依赖（没有）、不跑浏览器测试（无 playwright 依赖，
+# 核心逻辑已由规则引擎测试覆盖；UI 靠人工验收）。
+#
+# ⚠️ 所有断言都先在本地跑通再写进来 —— 写一个一上来就红的 CI 等于没有 CI。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 语法 + 规则引擎自测
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: JS 语法检查
+        run: |
+          APP="outputs/高企评分自评系统"
+          fail=0
+          for f in "$APP/assets/app.js" "$APP/assets/rule-engine.js" "$APP/sw.js"; do
+            if node --check "$f"; then
+              echo "✅ $f"
+            else
+              echo "::error file=$f::语法错误"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then exit 1; fi
+
+      - name: 规则包 JSON 合法性
+        run: |
+          APP="outputs/高企评分自评系统"
+          node -e '
+          const fs = require("fs");
+          const p = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+          const need = ["policy_version", "pack_updated_at", "ip", "transform", "rdmgmt", "growth", "precheck"];
+          const miss = need.filter(k => !(k in p));
+          if (miss.length) {
+            console.log("::error::规则包缺少字段: " + miss.join(", "));
+            process.exit(1);
+          }
+          console.log("✅ 规则包合法，policy_version=" + p.policy_version + " updated=" + p.pack_updated_at);
+          ' "$APP/rules/policy.json"
+
+      - name: 规则引擎自测
+        run: |
+          node -e '
+          const R = require("./outputs/高企评分自评系统/assets/rule-engine.js");
+          let fail = 0;
+          const check = (name, cond, extra) => {
+            if (cond) { console.log("✅ " + name); }
+            else { console.log("::error::" + name + (extra ? " — " + extra : "")); fail++; }
+          };
+
+          // 1) 公开 API 完整
+          const need = ["assess","growthRate","bandToRange","ipCountBand","effectiveAssets","precheck","applyRulePack","exportRulePack","resetRulePack","POLICY"];
+          const miss = need.filter(k => typeof R[k] === "undefined");
+          check("导出完整", miss.length === 0, "缺少: " + miss.join(","));
+
+          // 2) 成长性三态（政策口径，最容易被改错的地方）
+          const g1 = R.growthRate(100, null, null, 1);
+          check("成长性：满 1 年 → 0 分（BIZ_1Y）",
+                g1.edge === "BIZ_1Y" && g1.score[0] === 0 && g1.score[1] === 0, JSON.stringify(g1));
+
+          const g2 = R.growthRate(100, 120, null, 2);
+          check("成长性：满 2 年 → 单段降维（BIZ_2Y_SINGLE）",
+                g2.edge === "BIZ_2Y_SINGLE", JSON.stringify(g2));
+
+          const g3 = R.growthRate(100, 120, 150, 3);
+          check("成长性：满 3 年 → 两段公式（NORMAL）",
+                g3.edge === "NORMAL", JSON.stringify(g3));
+
+          // 2b) 负增长必须落最低档，不能算成正
+          const gneg = R.growthRate(100, 90, 80, 3);
+          check("成长性：负增长不得为正分", gneg.score[1] <= 0 || gneg.band === "F", JSON.stringify(gneg));
+
+          // 3) 一票否决项可调用
+          check("precheck 是函数", typeof R.precheck === "function", typeof R.precheck);
+
+          // 4) 规则包导出含版本号（远端更新靠它判新旧）
+          const pack = R.exportRulePack();
+          check("exportRulePack 含 policy_version",
+                pack && pack.policy_version === "national-2016", JSON.stringify(pack && pack.policy_version));
+
+          // 5) 规则包可导入且幂等
+          const before = JSON.stringify(R.POLICY);
+          R.applyRulePack(pack);
+          const after = JSON.stringify(R.POLICY);
+          check("applyRulePack 幂等", before === after, "导入同一规则包后 POLICY 发生变化");
+
+          if (fail) process.exit(1);
+          console.log("规则引擎自测全部通过");
+          '
+
+      - name: 敏感信息扫描
+        run: |
+          # PUBLIC 仓库：不得出现本机绝对路径、WorkBuddy 应用 ID 或凭据
+          hits=$(grep -rInE 'D:\\Jav1e Flies|C:\\Users\\[A-Za-z0-9_.-]+\\|wbapp_[A-Za-z0-9]{10,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}' \
+                 --exclude-dir=.git . || true)
+          if [ -n "$hits" ]; then
+            echo "::error::发现疑似本机路径或凭据"
+            echo "$hits"
+            exit 1
+          fi
+          echo "✅ 未发现本机路径或凭据"
+
+      - name: 禁止入库的元数据
+        run: |
+          # .workbuddy/ 与 *.genie 含本机路径，必须被 .gitignore 挡住
+          bad=$(git ls-files | grep -E '\.workbuddy/|\.genie$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::WorkBuddy 元数据不应入库"
+            echo "$bad"
+            exit 1
+          fi
+          echo "✅ 元数据未被跟踪"
